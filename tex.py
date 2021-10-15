@@ -31,6 +31,7 @@ from maubot.handlers import command
 class Config(BaseProxyConfig):
     def do_update(self, helper: ConfigUpdateHelper) -> None:
         helper.copy("use_tex")
+        helper.copy("packages")
         helper.copy("font_size")
         helper.copy("thumbnail_dpi")
         helper.copy("mode")
@@ -52,9 +53,20 @@ class TexBot(Plugin):
     @command.argument("formula", required=True, pass_raw=True)
     async def tex(self, evt: MessageEvent, formula: str) -> None:
         fig = plot.figure(figsize=(0.01, 0.01))
-        text = fig.text(0, 0, rf"${formula}$",
-                        fontsize=self.config["font_size"],
-                        usetex=self.config["use_tex"])
+        if self.config["use_tex"]:
+            params = {
+                "text.latex.preamble": [
+                    f"\\usepackage{{{pack}}}" for pack in self.config["packages"]
+                ]
+            }
+            plot.rcParams.update(params)
+        text = fig.text(
+            0,
+            0,
+            rf"${formula}$",
+            fontsize=self.config["font_size"],
+            usetex=self.config["use_tex"],
+        )
         info = ImageInfo(thumbnail_info=ThumbnailInfo())
 
         output = BytesIO()
@@ -86,10 +98,14 @@ class TexBot(Plugin):
 
         output.seek(0)
         output.truncate(0)
-        fig.savefig(output, dpi=self.config["thumbnail_dpi"], format="png", bbox_inches="tight")
+        fig.savefig(
+            output, dpi=self.config["thumbnail_dpi"], format="png", bbox_inches="tight"
+        )
 
         data = output.getvalue()
-        info.thumbnail_url = await self.client.upload_media(data, "image/png", "tex.thumb.png")
+        info.thumbnail_url = await self.client.upload_media(
+            data, "image/png", "tex.thumb.png"
+        )
         info.thumbnail_info.size = len(data)
         plot.close(fig)
 

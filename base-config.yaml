@@ -1,5 +1,7 @@
 # https://matplotlib.org/users/usetex.html
 use_tex: false
+# List of packages to autoload when `use_tex` is `true`
+packages: [amsmath, amssymb, amsfonts]
 # Font size for rendering LaTeX
 font_size: 18
 # Dots per inch for PNG thumbnail
